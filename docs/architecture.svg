@@ -1,0 +1,65 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 780 420" role="img" aria-label="tenkiのアーキテクチャ図">
+  <title>tenkiのアーキテクチャ: 気象庁公開JSONの取得からパース、SVG描画までの流れ</title>
+  <style>
+    .box { fill: #ffffff; stroke: #c9cfd6; rx: 10; }
+    .zone { fill: #eff2f5; stroke: #dde2e8; rx: 14; }
+    .t { font-family: 'Hiragino Sans','Noto Sans JP',system-ui,sans-serif; fill: #20262d; }
+    .h { font-size: 14px; font-weight: 600; }
+    .s { font-size: 11px; fill: #5b6470; }
+    .zl { font-size: 11px; font-weight: 600; fill: #2d6a8f; letter-spacing: 1px; }
+    .arrow { stroke: #5b6470; stroke-width: 1.6; fill: none; marker-end: url(#head); }
+    @media (prefers-color-scheme: dark) {
+      .box { fill: #1c222b; stroke: #3a424d; }
+      .zone { fill: #171c23; stroke: #2a313a; }
+      .t { fill: #e6eaee; }
+      .s { fill: #97a1ad; }
+      .zl { fill: #6aa6cc; }
+      .arrow { stroke: #97a1ad; }
+    }
+  </style>
+  <defs>
+    <marker id="head" markerWidth="8" markerHeight="8" refX="6" refY="4" orient="auto">
+      <path d="M0 0 L7 4 L0 8 Z" fill="#5b6470"/>
+    </marker>
+  </defs>
+
+  <rect class="zone" x="20" y="20" width="740" height="96"/>
+  <text class="t zl" x="36" y="44">気象庁の公開JSON(www.jma.go.jp/bosai)</text>
+  <rect class="box" x="36" y="56" width="220" height="44"/>
+  <text class="t h" x="52" y="76">area.json</text>
+  <text class="t s" x="52" y="92">地方と予報区の定義</text>
+  <rect class="box" x="272" y="56" width="230" height="44"/>
+  <text class="t h" x="288" y="76">forecast/{office}.json</text>
+  <text class="t s" x="288" y="92">向こう3日の詳細+週間予報</text>
+  <rect class="box" x="518" y="56" width="226" height="44"/>
+  <text class="t h" x="534" y="76">overview_forecast</text>
+  <text class="t s" x="534" y="92">天気概況の文章</text>
+
+  <path class="arrow" d="M146 116 V146"/>
+  <path class="arrow" d="M387 116 V146"/>
+  <path class="arrow" d="M631 116 V146"/>
+
+  <rect class="zone" x="20" y="150" width="740" height="156"/>
+  <text class="t zl" x="36" y="174">純関数ライブラリ(src/lib、フィクスチャでテスト)</text>
+  <rect class="box" x="36" y="186" width="220" height="52"/>
+  <text class="t h" x="52" y="207">groupOffices(api.ts)</text>
+  <text class="t s" x="52" y="224">地方ごとの予報区セレクタを構成</text>
+  <rect class="box" x="272" y="186" width="230" height="52"/>
+  <text class="t h" x="288" y="207">parseForecast(parse.ts)</text>
+  <text class="t s" x="288" y="224">日付へ正規化した表示用モデル</text>
+  <rect class="box" x="518" y="186" width="226" height="52"/>
+  <text class="t h" x="534" y="207">weather.ts</text>
+  <text class="t s" x="534" y="224">天気コードの分類・ラベル・正規化</text>
+  <rect class="box" x="154" y="246" width="230" height="52"/>
+  <text class="t h" x="170" y="267">renderTempChart(chart.ts)</text>
+  <text class="t s" x="170" y="284">欠測対応の気温折れ線SVG</text>
+  <rect class="box" x="400" y="246" width="230" height="52"/>
+  <text class="t h" x="416" y="267">weatherIcon(icons.ts)</text>
+  <text class="t s" x="416" y="284">晴・曇・雨・雪のSVGアイコン</text>
+
+  <path class="arrow" d="M390 306 V336"/>
+
+  <rect class="zone" x="20" y="340" width="740" height="60"/>
+  <text class="t zl" x="36" y="364">UI(main.ts / index.html)</text>
+  <text class="t s" x="36" y="386">予報区選択・今日明日カード・週間予報と気温チャート・概況・エラー再試行・テーマ切替・URLハッシュ共有</text>
+</svg>
