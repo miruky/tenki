@@ -19,6 +19,8 @@ const dashboardEl = document.getElementById('dashboard')!;
 const officeSelect = document.getElementById('office-select') as HTMLSelectElement;
 const areaSelect = document.getElementById('area-select') as HTMLSelectElement;
 const reloadButton = document.getElementById('reload-button')!;
+const shareButton = document.getElementById('share-button')!;
+const toolbarStatus = document.getElementById('toolbar-status')!;
 
 const OFFICE_KEY = 'tenki-office';
 const DEFAULT_OFFICE = '130000';
@@ -38,11 +40,15 @@ function dayHeading(date: string, index: number): string {
   const names = ['今日', '明日', '明後日'];
   const label = names[index] ?? '';
   const md = `${Number(date.slice(5, 7))}/${Number(date.slice(8, 10))}`;
-  return label ? `${label} ${md}` : md;
+  const weekday = new Intl.DateTimeFormat('ja-JP', { weekday: 'short' }).format(
+    new Date(`${date}T00:00:00+09:00`),
+  );
+  return label ? `${label} ${md} ${weekday}` : `${md} ${weekday}`;
 }
 
 function renderDayCard(day: ShortTermDay, index: number): string {
   const category = weatherCategory(day.weatherCode);
+  const primary = index === 0;
   const pops = day.pops
     .map(
       (p) =>
@@ -52,17 +58,18 @@ function renderDayCard(day: ShortTermDay, index: number): string {
     )
     .join('');
   const temp =
-    `<p class="temps">` +
+    `<p class="temps" aria-label="最高気温と最低気温">` +
     `<span class="temp-max">${day.tempMax !== null ? `${day.tempMax}°` : '--'}</span>` +
-    ` / <span class="temp-min">${day.tempMin !== null ? `${day.tempMin}°` : '--'}</span>` +
+    `<span class="temp-divider">/</span><span class="temp-min">${day.tempMin !== null ? `${day.tempMin}°` : '--'}</span>` +
     `</p>`;
   return (
-    `<article class="card day-card">` +
-    `<h2>${dayHeading(day.date, index)}</h2>` +
-    `<div class="day-main">${weatherIcon(category, 56)}` +
-    `<div><p class="weather-label">${escapeHtml(weatherLabel(day.weatherCode))}</p>${temp}</div></div>` +
-    `<p class="weather-text">${escapeHtml(normalizeText(day.weatherText))}</p>` +
-    (day.wind ? `<p class="wind">風: ${escapeHtml(normalizeText(day.wind))}</p>` : '') +
+    `<article class="day-card${primary ? ' is-primary' : ''}">` +
+    `<header class="day-heading"><span>${dayHeading(day.date, index)}</span><small>${day.date}</small></header>` +
+    `<div class="day-main">${weatherIcon(category, primary ? 104 : 58)}` +
+    `<div class="weather-reading"><p class="weather-label">${escapeHtml(weatherLabel(day.weatherCode))}</p>${temp}</div></div>` +
+    `<div class="day-copy"><p class="weather-text">${escapeHtml(normalizeText(day.weatherText))}</p>` +
+    (day.wind ? `<p class="wind"><span>風</span>${escapeHtml(normalizeText(day.wind))}</p>` : '') +
+    `</div>` +
     (pops ? `<div class="pops" role="list" aria-label="時間帯別の降水確率">${pops}</div>` : '') +
     `</article>`
   );
@@ -87,8 +94,9 @@ function renderWeekly(dashboard: Dashboard): string {
     })
     .join('');
   return (
-    `<section class="card weekly-card">` +
-    `<h2>週間予報${dashboard.tempAreaName ? `(気温: ${escapeHtml(dashboard.tempAreaName)})` : ''}</h2>` +
+    `<section class="forecast-section weekly-card">` +
+    `<header class="section-heading"><div><span>Seven day outlook</span><h2>週間予報</h2></div>` +
+    `<p>${dashboard.tempAreaName ? `気温観測地点 ${escapeHtml(dashboard.tempAreaName)}` : ''}</p></header>` +
     `<div class="weekly-strip" role="list">${cells}</div>` +
     `<div class="chart-wrap">${renderTempChart(dashboard.weekly)}</div>` +
     `</section>`
@@ -103,8 +111,14 @@ function renderDashboard(dashboard: Dashboard, overview: Overview | null): void 
     minute: '2-digit',
   });
   const days = dashboard.days.slice(0, 3).map(renderDayCard).join('');
+  const maxPop = Math.max(
+    0,
+    ...dashboard.days.flatMap((day) => day.pops.map((entry) => entry.pop)),
+    ...dashboard.weekly.map((day) => day.pop ?? 0),
+  );
+  const today = dashboard.days[0];
   const overviewHtml = overview
-    ? `<section class="card overview-card"><h2>天気概況</h2>` +
+    ? `<section class="forecast-section overview-card"><header class="section-heading"><div><span>Forecast bulletin</span><h2>天気概況</h2></div></header>` +
       (overview.headlineText
         ? `<p class="headline">${escapeHtml(normalizeText(overview.headlineText))}</p>`
         : '') +
@@ -112,10 +126,18 @@ function renderDashboard(dashboard: Dashboard, overview: Overview | null): void 
       `</section>`
     : '';
   dashboardEl.innerHTML =
-    `<p class="meta">${escapeHtml(dashboard.areaName)} / ${escapeHtml(dashboard.publishingOffice)} ${updated}発表</p>` +
+    `<header class="dashboard-intro"><div><span class="dashboard-kicker">Current forecast</span>` +
+    `<h1>${escapeHtml(dashboard.areaName)}</h1><p>${escapeHtml(dashboard.publishingOffice)}・${updated}発表</p></div>` +
+    `<dl class="forecast-facts">` +
+    `<div><dt>最高</dt><dd class="temp-max">${today?.tempMax ?? '--'}°</dd></div>` +
+    `<div><dt>最低</dt><dd class="temp-min">${today?.tempMin ?? '--'}°</dd></div>` +
+    `<div><dt>最大降水</dt><dd>${maxPop}%</dd></div>` +
+    `<div><dt>予報日数</dt><dd>${dashboard.weekly.length}日</dd></div>` +
+    `</dl></header>` +
     `<div class="day-grid">${days}</div>` +
     renderWeekly(dashboard) +
     overviewHtml;
+  toolbarStatus.textContent = `${dashboard.areaName}を表示中`;
 }
 
 function renderError(message: string): void {
@@ -140,7 +162,9 @@ function writeHash(): void {
 }
 
 async function load(): Promise<void> {
-  dashboardEl.innerHTML = '<p class="status">読み込み中...</p>';
+  dashboardEl.innerHTML =
+    '<div class="loading-shell" aria-label="予報を読み込み中"><span></span><span></span><span></span></div>';
+  toolbarStatus.textContent = '予報を更新中';
   try {
     const [forecastRaw, overviewRaw] = await Promise.all([
       fetchJson(forecastUrl(currentOffice)),
@@ -198,6 +222,16 @@ areaSelect.addEventListener('change', () => {
 });
 
 reloadButton.addEventListener('click', () => void load());
+
+shareButton.addEventListener('click', async () => {
+  const url = location.href;
+  try {
+    await navigator.clipboard.writeText(url);
+    toolbarStatus.textContent = '表示中の地域URLをコピーしました';
+  } catch {
+    toolbarStatus.textContent = 'アドレスバーのURLを共有してください';
+  }
+});
 
 // ---- 配色テーマ ----
 

@@ -12,28 +12,96 @@
   </head>
   <body>
     <header class="app-header">
-      <div class="brand">
-        <svg class="brand-mark" viewBox="0 0 32 32" aria-hidden="true">
-          <circle cx="11" cy="11" r="5.5" fill="none" stroke="#d99e2b" stroke-width="2.4" />
-          <path
-            d="M11 16.5a6 6 0 0 0-.6 12h12.1a5 5 0 0 0 .8-9.9 7 7 0 0 0-12.3-2.1Z"
-            fill="none"
-            stroke="currentColor"
-            stroke-width="2.4"
-            stroke-linejoin="round"
-          />
-        </svg>
-        <h1>tenki</h1>
-        <p class="tagline">気象庁データの天気ダッシュボード</p>
+      <div class="header-shell">
+        <a class="brand" href="./" aria-label="tenki トップ">
+          <svg class="brand-mark" viewBox="0 0 32 32" aria-hidden="true">
+            <circle cx="11" cy="11" r="5.5" fill="none" stroke="currentColor" stroke-width="2.4" />
+            <path
+              d="M11 16.5a6 6 0 0 0-.6 12h12.1a5 5 0 0 0 .8-9.9 7 7 0 0 0-12.3-2.1Z"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2.4"
+              stroke-linejoin="round"
+            />
+          </svg>
+          <span>
+            <strong>tenki</strong>
+            <small>JMA forecast observatory</small>
+          </span>
+        </a>
+        <div class="header-actions">
+          <span id="toolbar-status" class="toolbar-status" role="status" aria-live="polite"></span>
+          <button
+            id="share-button"
+            class="icon-button"
+            type="button"
+            aria-label="表示中の地域を共有する"
+            title="表示中の地域を共有"
+          >
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+              <path
+                d="M8.5 12.8 15.8 8m-7.3 3.2 7.3 4.8M6.5 14.8a2.5 2.5 0 1 0 0-5 2.5 2.5 0 0 0 0 5Zm10.8-5a2.5 2.5 0 1 0 0-5 2.5 2.5 0 0 0 0 5Zm0 9.4a2.5 2.5 0 1 0 0-5 2.5 2.5 0 0 0 0 5Z"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="1.8"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              />
+            </svg>
+          </button>
+          <button
+            id="theme-toggle"
+            class="icon-button"
+            type="button"
+            aria-label="配色テーマを切り替える"
+            title="配色テーマを切り替える"
+          >
+            <svg class="icon-sun" viewBox="0 0 24 24" aria-hidden="true">
+              <circle
+                cx="12"
+                cy="12"
+                r="4.5"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="1.8"
+              />
+              <g stroke="currentColor" stroke-width="1.8" stroke-linecap="round">
+                <path
+                  d="M12 2.5v2.4M12 19.1v2.4M2.5 12h2.4M19.1 12h2.4M5 5l1.7 1.7M17.3 17.3 19 19M19 5l-1.7 1.7M6.7 17.3 5 19"
+                />
+              </g>
+            </svg>
+            <svg class="icon-moon" viewBox="0 0 24 24" aria-hidden="true">
+              <path
+                d="M20 14.5A8.5 8.5 0 0 1 9.5 4 8.5 8.5 0 1 0 20 14.5Z"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="1.8"
+                stroke-linejoin="round"
+              />
+            </svg>
+          </button>
+        </div>
       </div>
-      <div class="header-controls">
-        <label class="visually-hidden" for="office-select">予報区</label>
-        <select id="office-select" aria-label="予報区を選ぶ"></select>
-        <label class="visually-hidden" for="area-select">細分区域</label>
-        <select id="area-select" aria-label="細分区域を選ぶ"></select>
+    </header>
+
+    <section class="forecast-toolbar" aria-label="予報地域">
+      <div class="toolbar-shell">
+        <div class="toolbar-heading">
+          <span>Forecast area</span>
+          <strong>予報エリア</strong>
+        </div>
+        <div class="area-controls">
+          <label for="office-select">都道府県・予報区</label>
+          <select id="office-select"></select>
+        </div>
+        <div class="area-controls">
+          <label for="area-select">細分区域</label>
+          <select id="area-select"></select>
+        </div>
         <button
           id="reload-button"
-          class="icon-button"
+          class="reload-button"
           type="button"
           aria-label="最新の予報を取得する"
         >
@@ -47,33 +115,10 @@
               stroke-linejoin="round"
             />
           </svg>
-        </button>
-        <button
-          id="theme-toggle"
-          class="icon-button"
-          type="button"
-          aria-label="配色テーマを切り替える"
-        >
-          <svg class="icon-sun" viewBox="0 0 24 24" aria-hidden="true">
-            <circle cx="12" cy="12" r="4.5" fill="none" stroke="currentColor" stroke-width="1.8" />
-            <g stroke="currentColor" stroke-width="1.8" stroke-linecap="round">
-              <path
-                d="M12 2.5v2.4M12 19.1v2.4M2.5 12h2.4M19.1 12h2.4M5 5l1.7 1.7M17.3 17.3 19 19M19 5l-1.7 1.7M6.7 17.3 5 19"
-              />
-            </g>
-          </svg>
-          <svg class="icon-moon" viewBox="0 0 24 24" aria-hidden="true">
-            <path
-              d="M20 14.5A8.5 8.5 0 0 1 9.5 4 8.5 8.5 0 1 0 20 14.5Z"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="1.8"
-              stroke-linejoin="round"
-            />
-          </svg>
+          <span>更新</span>
         </button>
       </div>
-    </header>
+    </section>
 
     <main id="dashboard" class="app-main" aria-live="polite">
       <p class="status">読み込み中...</p>
