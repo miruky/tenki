@@ -9,6 +9,19 @@
     />
     <title>tenki - 天気ダッシュボード</title>
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <script>
+      // 描画前に保存済みテーマを反映し、リロード時の明暗のちらつきを防ぐ。
+      (function () {
+        try {
+          var t = localStorage.getItem('tenki-theme');
+          if (t === 'light' || t === 'dark') {
+            document.documentElement.setAttribute('data-theme', t);
+          }
+        } catch (e) {
+          /* localStorageを触れない環境では既定(端末設定)のままにする */
+        }
+      })();
+    </script>
   </head>
   <body>
     <header class="app-header">
