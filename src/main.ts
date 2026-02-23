@@ -110,7 +110,9 @@ function renderDashboard(dashboard: Dashboard, overview: Overview | null): void 
     hour: 'numeric',
     minute: '2-digit',
   });
-  const days = dashboard.days.slice(0, 3).map(renderDayCard).join('');
+  // 夕方以降は短期予報が2日分のことがある。枚数に合わせて段組を変え、空欄を残さない。
+  const shownDays = dashboard.days.slice(0, 3);
+  const days = shownDays.map(renderDayCard).join('');
   const maxPop = Math.max(
     0,
     ...dashboard.days.flatMap((day) => day.pops.map((entry) => entry.pop)),
@@ -134,7 +136,7 @@ function renderDashboard(dashboard: Dashboard, overview: Overview | null): void 
     `<div><dt>最大降水</dt><dd>${maxPop}%</dd></div>` +
     `<div><dt>予報日数</dt><dd>${dashboard.weekly.length}日</dd></div>` +
     `</dl></header>` +
-    `<div class="day-grid">${days}</div>` +
+    `<div class="day-grid day-grid-${Math.max(1, shownDays.length)}">${days}</div>` +
     renderWeekly(dashboard) +
     overviewHtml;
   toolbarStatus.textContent = `${dashboard.areaName}を表示中`;
