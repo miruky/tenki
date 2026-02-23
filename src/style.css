@@ -116,6 +116,7 @@ button {
 
 .header-shell,
 .toolbar-shell,
+.favorites-bar,
 .app-main,
 .app-footer p {
   width: min(1180px, calc(100% - 48px));
@@ -323,6 +324,82 @@ button {
 .reload-button:hover {
   filter: brightness(1.08);
   transform: translateY(-1px);
+}
+
+/* お気に入りの星(押下で塗る) */
+#pin-button[aria-pressed='true'] .pin-star {
+  fill: color-mix(in srgb, var(--sun) 26%, transparent);
+  stroke: var(--sun);
+}
+
+/* お気に入りの地域チップ */
+.favorites-bar {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  padding-block: 14px;
+  border-bottom: 1px solid var(--line);
+}
+
+.favorites-label {
+  margin-right: 4px;
+  color: var(--accent);
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+}
+
+.fav-chip {
+  display: inline-flex;
+  align-items: center;
+  overflow: hidden;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: var(--surface);
+  transition:
+    border-color 0.18s ease,
+    background-color 0.18s ease;
+}
+
+.fav-chip:hover {
+  border-color: var(--ink-muted);
+}
+
+.fav-chip.is-active {
+  border-color: var(--accent);
+  background: var(--accent-soft);
+}
+
+.fav-go {
+  padding: 6px 4px 6px 14px;
+  border: none;
+  background: none;
+  color: var(--ink);
+  font-size: 12px;
+  cursor: pointer;
+}
+
+.fav-remove {
+  display: inline-grid;
+  place-items: center;
+  width: 26px;
+  height: 28px;
+  border: none;
+  background: none;
+  color: var(--ink-muted);
+  cursor: pointer;
+  transition: color 0.18s ease;
+}
+
+.fav-remove svg {
+  width: 13px;
+  height: 13px;
+}
+
+.fav-remove:hover {
+  color: var(--error);
 }
 
 .app-main {
@@ -862,6 +939,7 @@ button {
 @media (max-width: 680px) {
   .header-shell,
   .toolbar-shell,
+  .favorites-bar,
   .app-main,
   .app-footer p {
     width: min(100% - 28px, 1180px);
