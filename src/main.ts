@@ -4,31 +4,42 @@ import {
   escapeHtml,
   forecastUrl,
   groupOffices,
+  isFavorite,
   listForecastAreas,
   normalizeText,
   overviewUrl,
   parseForecast,
+  readFavorites,
+  removeFavorite,
   renderTempChart,
+  toggleFavorite,
   weatherCategory,
   weatherIcon,
   weatherLabel,
+  writeFavorites,
 } from './lib';
-import type { Dashboard, Overview, ShortTermDay } from './lib';
+import type { Dashboard, Favorite, Overview, ShortTermDay } from './lib';
 
 const dashboardEl = document.getElementById('dashboard')!;
 const officeSelect = document.getElementById('office-select') as HTMLSelectElement;
 const areaSelect = document.getElementById('area-select') as HTMLSelectElement;
 const reloadButton = document.getElementById('reload-button')!;
 const shareButton = document.getElementById('share-button')!;
+const pinButton = document.getElementById('pin-button')!;
+const favoritesBar = document.getElementById('favorites-bar')!;
 const toolbarStatus = document.getElementById('toolbar-status')!;
 
 const OFFICE_KEY = 'tenki-office';
 const DEFAULT_OFFICE = '130000';
+const STALE_MS = 30 * 60 * 1000;
 
 let currentOffice = DEFAULT_OFFICE;
 let currentAreaIndex = 0;
 let currentForecastRaw: unknown = null;
 let currentOverview: Overview | null = null;
+let currentLabel = '';
+let favorites = readFavorites(localStorage);
+let lastLoadedAt = 0;
 
 async function fetchJson(url: string): Promise<unknown> {
   const res = await fetch(url);
@@ -140,6 +151,43 @@ function renderDashboard(dashboard: Dashboard, overview: Overview | null): void 
     renderWeekly(dashboard) +
     overviewHtml;
   toolbarStatus.textContent = `${dashboard.areaName}を表示中`;
+  currentLabel = dashboard.areaName;
+  updatePinState();
+  renderFavorites();
+}
+
+function updatePinState(): void {
+  const pinned = isFavorite(favorites, currentOffice, currentAreaIndex);
+  pinButton.setAttribute('aria-pressed', String(pinned));
+  const label = pinned ? 'この地域をお気に入りから外す' : 'この地域をお気に入りに追加する';
+  pinButton.setAttribute('aria-label', label);
+  pinButton.setAttribute('title', pinned ? 'お気に入りから外す' : 'お気に入りに追加');
+}
+
+const REMOVE_ICON =
+  '<svg viewBox="0 0 16 16" aria-hidden="true">' +
+  '<path d="M4.5 4.5l7 7M11.5 4.5l-7 7" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>';
+
+function renderFavorites(): void {
+  if (favorites.length === 0) {
+    favoritesBar.hidden = true;
+    favoritesBar.innerHTML = '';
+    return;
+  }
+  favoritesBar.hidden = false;
+  favoritesBar.innerHTML =
+    '<span class="favorites-label">お気に入り</span>' +
+    favorites
+      .map((f) => {
+        const active = f.office === currentOffice && f.areaIndex === currentAreaIndex;
+        return (
+          `<span class="fav-chip${active ? ' is-active' : ''}">` +
+          `<button type="button" class="fav-go" data-office="${f.office}" data-index="${f.areaIndex}">${escapeHtml(f.label)}</button>` +
+          `<button type="button" class="fav-remove" data-office="${f.office}" data-index="${f.areaIndex}" aria-label="${escapeHtml(f.label)}をお気に入りから外す">${REMOVE_ICON}</button>` +
+          `</span>`
+        );
+      })
+      .join('');
 }
 
 function renderError(message: string): void {
@@ -177,6 +225,7 @@ async function load(): Promise<void> {
     syncAreaSelect();
     renderDashboard(parseForecast(forecastRaw, currentAreaIndex), currentOverview);
     localStorage.setItem(OFFICE_KEY, currentOffice);
+    lastLoadedAt = Date.now();
     writeHash();
   } catch (err) {
     renderError(err instanceof Error ? err.message : '予報の取得に失敗しました');
@@ -225,6 +274,43 @@ areaSelect.addEventListener('change', () => {
 
 reloadButton.addEventListener('click', () => void load());
 
+pinButton.addEventListener('click', () => {
+  const fav: Favorite = {
+    office: currentOffice,
+    areaIndex: currentAreaIndex,
+    label: currentLabel || currentOffice,
+  };
+  favorites = toggleFavorite(favorites, fav);
+  writeFavorites(localStorage, favorites);
+  const added = isFavorite(favorites, currentOffice, currentAreaIndex);
+  updatePinState();
+  renderFavorites();
+  toolbarStatus.textContent = added ? 'お気に入りに追加しました' : 'お気に入りから外しました';
+});
+
+favoritesBar.addEventListener('click', (e) => {
+  const target = e.target as HTMLElement;
+  const remove = target.closest<HTMLElement>('.fav-remove');
+  if (remove) {
+    favorites = removeFavorite(
+      favorites,
+      remove.dataset.office ?? '',
+      Number(remove.dataset.index),
+    );
+    writeFavorites(localStorage, favorites);
+    updatePinState();
+    renderFavorites();
+    return;
+  }
+  const go = target.closest<HTMLElement>('.fav-go');
+  if (go) {
+    currentOffice = go.dataset.office ?? DEFAULT_OFFICE;
+    currentAreaIndex = Number(go.dataset.index);
+    officeSelect.value = currentOffice;
+    void load();
+  }
+});
+
 shareButton.addEventListener('click', async () => {
   const url = location.href;
   try {
@@ -258,6 +344,41 @@ themeToggle.addEventListener('click', () => {
 });
 
 applyTheme(localStorage.getItem(THEME_KEY));
+
+// ---- キーボード操作と再表示時の自動更新 ----
+
+document.addEventListener('keydown', (e) => {
+  const target = e.target;
+  if (
+    target instanceof HTMLElement &&
+    (target.matches('input, select, textarea') || target.isContentEditable)
+  ) {
+    return;
+  }
+  if (e.metaKey || e.ctrlKey || e.altKey) return;
+  const key = e.key.toLowerCase();
+  if (key === 'r') {
+    e.preventDefault();
+    void load();
+  } else if (key === 't') {
+    e.preventDefault();
+    themeToggle.click();
+  } else if (key === 'f') {
+    e.preventDefault();
+    pinButton.click();
+  }
+});
+
+// タブへ戻ったとき、最後の取得から時間が経っていれば静かに更新する。
+document.addEventListener('visibilitychange', () => {
+  if (
+    document.visibilityState === 'visible' &&
+    lastLoadedAt > 0 &&
+    Date.now() - lastLoadedAt > STALE_MS
+  ) {
+    void load();
+  }
+});
 
 // ---- 起動: ハッシュ > 保存値 > 既定 ----
 
